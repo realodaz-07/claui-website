@@ -1,0 +1,30 @@
+name: Deploy to Cloudflare Pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Assemble dist (assets allowlist)
+        run: |
+          mkdir -p dist/css dist/js dist/assets
+          cp index.html dist/
+          cp css/styles.css dist/css/
+          cp js/main.js dist/js/
+          cp assets/* dist/assets/
+      - name: Publish
+        if: ${{ env.CLOUDFLARE_API_TOKEN != '' }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: 1a27e68352eb5c992f9f46417dc6dc7a
+        uses: cloudflare/wrangler-action@v3
+        with:
+          command: pages deploy dist --project-name=claui --branch=main
+      - name: Note when token missing
+        if: ${{ env.CLOUDFLARE_API_TOKEN == '' }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: echo "CLOUDFLARE_API_TOKEN not set — skipping deploy (dormant CI)."
