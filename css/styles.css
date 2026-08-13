@@ -135,7 +135,8 @@ h3{font-family:var(--display);font-weight:800}
 .statement__body p{color:var(--ink-soft);max-width:46ch;margin-bottom:1.8rem;font-size:1.05rem}
 
 /* ---------- LOGOS ---------- */
-.logos{background:var(--dark);color:var(--bg);padding:1.6rem 4vw}
+.logos{background:var(--purple);color:var(--dark);padding:1.6rem 4vw}
+.logos .brand-accent{color:var(--dark);background:none;padding:0}
 .logos__row{max-width:var(--maxw);margin:0 auto;display:flex;flex-wrap:wrap;justify-content:space-between;gap:1.5rem;
   font-family:var(--display);font-weight:800;text-transform:uppercase;letter-spacing:.08em;font-size:clamp(.8rem,1.6vw,1.05rem);opacity:.92}
 
