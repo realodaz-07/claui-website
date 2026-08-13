@@ -250,6 +250,7 @@ h3{font-family:var(--display);font-weight:800}
 
 /* ---------- OFFER band (here's what you get) ---------- */
 .offer{background:var(--purple);padding:10vh 4vw}
+.offer .script--accent{color:var(--white)}
 .offer__head{max-width:var(--maxw);margin:0 auto 3.2rem;text-align:center}
 .offer__head h2{font-size:clamp(2rem,5.4vw,3.8rem);color:var(--dark)}
 .offer__sub{font-size:clamp(1.1rem,2.6vw,1.6rem);color:var(--dark);max-width:42ch;margin:1.1rem auto 0}
