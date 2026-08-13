@@ -52,48 +52,66 @@
 
   <main id="top">
 
-    <!-- HERO -->
-    <section class="hero" id="hero">
-      <div class="hero__media" data-tilt>
-        <div class="hero__img" style="--img:url('/assets/hero.png')"></div>
-        <span class="scribble scribble--hero">glow from within</span>
-      </div>
-      <div class="hero__overlay">
-        <p class="hero__eyebrow reveal">Skin confidence &amp; whole-life wellness</p>
-        <h1 class="hero__title">
-          <span class="reveal" style="--d:.05s">SIMPLE</span>
-          <span class="reveal" style="--d:.12s">HABITS.</span>
-          <span class="reveal outline" style="--d:.19s">REAL RESULTS.</span>
-        </h1>
-        <p class="hero__serif reveal" style="--d:.24s">The simple system behind real, lasting glow.</p>
-        <p class="hero__lede reveal" style="--d:.3s">
-          I’m Claui — and I know the mirror-avoiding, cover-it-up feeling. <em>Real change didn’t come from doing more;
-          it came from simple habits, the right care, and a little faith.</em> Let me show you how.
-        </p>
-        <div class="hero__cta reveal" style="--d:.36s">
-          <a href="#start" class="btn btn--solid">Start your glow-up</a>
-          <a href="#about" class="btn btn--ghost">My story →</a>
-        </div>
-      </div>
-    </section>
+    <!-- HERO SLIDER — slide 1: hero · slide 2: my story -->
+    <section class="hslider" id="hero" aria-roledescription="carousel" aria-label="Introduction">
+      <div class="hslider__track">
 
-    <!-- INTRO / STATEMENT -->
-    <section class="statement" id="about">
-      <div class="statement__grid">
-        <div class="statement__img reveal" style="--img:url('/assets/intro.png')"></div>
-        <div class="statement__body">
-          <p class="script script--accent reveal">my story</p>
-          <h2 class="h-serif reveal" style="--d:.1s">
-            I spent years hiding my skin — until I stopped chasing quick fixes.
-          </h2>
-          <p class="reveal" style="--d:.2s">
-            The breakouts, the endless products, the confidence that quietly slipped away. What finally changed my
-            skin — and my life — wasn’t another 12-step routine. It was a handful of simple, consistent habits,
-            skincare that actually works with Celavive, and a faith that told me to rest, not quit. Now I help other
-            women do the same.
-          </p>
-          <a href="#start" class="btn btn--solid reveal" style="--d:.3s">Book a free call</a>
+        <!-- SLIDE 1 — HERO -->
+        <div class="hslider__slide" role="group" aria-roledescription="slide" aria-label="1 of 2">
+          <div class="hero">
+            <div class="hero__media" data-tilt>
+              <div class="hero__img" style="--img:url('/assets/hero.png')"></div>
+              <span class="scribble scribble--hero">glow from within</span>
+            </div>
+            <div class="hero__overlay">
+              <p class="hero__eyebrow reveal">Skin confidence &amp; whole-life wellness</p>
+              <h1 class="hero__title">
+                <span class="reveal" style="--d:.05s">SIMPLE</span>
+                <span class="reveal" style="--d:.12s">HABITS.</span>
+                <span class="reveal outline" style="--d:.19s">REAL RESULTS.</span>
+              </h1>
+              <p class="hero__serif reveal" style="--d:.24s">The simple system behind real, lasting glow.</p>
+              <p class="hero__lede reveal" style="--d:.3s">
+                I’m Claui — and I know the mirror-avoiding, cover-it-up feeling. <em>Real change didn’t come from doing more;
+                it came from simple habits, the right care, and a little faith.</em> Let me show you how.
+              </p>
+              <div class="hero__cta reveal" style="--d:.36s">
+                <a href="#start" class="btn btn--solid">Start your glow-up</a>
+                <a href="#about" class="btn btn--ghost" data-goslide="1">My story →</a>
+              </div>
+            </div>
+          </div>
         </div>
+
+        <!-- SLIDE 2 — MY STORY -->
+        <div class="hslider__slide" role="group" aria-roledescription="slide" aria-label="2 of 2">
+          <div class="statement" id="about">
+            <div class="statement__grid">
+              <div class="statement__img reveal" style="--img:url('/assets/intro.png')"></div>
+              <div class="statement__body">
+                <p class="script script--accent reveal">my story</p>
+                <h2 class="h-serif reveal" style="--d:.1s">
+                  I spent years hiding my skin — until I stopped chasing quick fixes.
+                </h2>
+                <p class="reveal" style="--d:.2s">
+                  The breakouts, the endless products, the confidence that quietly slipped away. What finally changed my
+                  skin — and my life — wasn’t another 12-step routine. It was a handful of simple, consistent habits,
+                  skincare that actually works with Celavive, and a faith that told me to rest, not quit. Now I help other
+                  women do the same.
+                </p>
+                <a href="#start" class="btn btn--solid reveal" style="--d:.3s">Book a free call</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <button class="hslider__nav hslider__nav--prev" type="button" aria-label="Previous slide">‹</button>
+      <button class="hslider__nav hslider__nav--next" type="button" aria-label="Next slide">›</button>
+      <div class="hslider__dots" role="tablist" aria-label="Choose slide">
+        <button class="hslider__dot is-active" type="button" aria-label="Hero" aria-selected="true"></button>
+        <button class="hslider__dot" type="button" aria-label="My story" aria-selected="false"></button>
       </div>
     </section>
 
@@ -321,10 +339,10 @@
       </div>
     </div>
     <div class="footer__strip" aria-hidden="true">
-      <span style="--img:url('/assets/hero.png')"></span>
-      <span style="--img:url('/assets/intro.png')"></span>
-      <span style="--img:url('/assets/cta.png')"></span>
-      <span style="--img:url('/assets/blog3.jpg')"></span>
+      <span style="--img:url('/assets/foot1.jpg')"></span>
+      <span style="--img:url('/assets/foot2.jpg')"></span>
+      <span style="--img:url('/assets/foot3.jpg')"></span>
+      <span style="--img:url('/assets/foot4.jpg');background-position:center 30%"></span>
     </div>
     <div class="footer__base">
       <span>© 2026 Claui & Co. All rights reserved.</span>
