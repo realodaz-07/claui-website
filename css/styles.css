@@ -73,9 +73,15 @@ h3{font-family:var(--display);font-weight:800}
 }
 /* all filled buttons share the header ("Work With Me") button effect */
 .btn--solid,.btn--pill,.btn--egg{background:var(--purple);color:var(--dark)}
-.btn--solid:hover,.btn--pill:hover,.btn--egg:hover{background:var(--dark);color:var(--white);transform:translateY(-3px);box-shadow:0 10px 0 -2px var(--dark)}
+/* hover: white fill, black shadow on light backgrounds */
+.btn--solid:hover,.btn--pill:hover,.btn--egg:hover{background:var(--white);color:var(--dark);transform:translateY(-3px);box-shadow:0 10px 0 -2px var(--dark)}
+/* on dark sections the drop-shadow is the pink shade */
+.dark .btn:hover,.banner .btn:hover{box-shadow:0 10px 0 -2px var(--egg)}
 .btn--ghost{background:transparent;color:var(--dark);border-color:transparent;text-decoration:underline;text-underline-offset:5px}
 .btn--ghost:hover{color:var(--purple-deep)}
+/* hero "My story →" link — pink */
+.hero__cta .btn--ghost{color:var(--egg)}
+.hero__cta .btn--ghost:hover{color:var(--green)}
 
 /* ---------- ticker ---------- */
 .ticker{background:var(--dark);color:var(--bg);overflow:hidden;white-space:nowrap;padding:.55rem 0;font-family:var(--display);font-weight:800;font-size:.72rem;letter-spacing:.12em}
@@ -115,7 +121,7 @@ h3{font-family:var(--display);font-weight:800}
 /* hand-drawn scribble labels */
 .scribble{position:absolute;font-family:var(--script);font-weight:700;color:var(--white);font-size:1.7rem;
   transform:rotate(-6deg);text-shadow:0 1px 8px rgba(0,0,0,.35)}
-.scribble--hero{top:1.4rem;left:1.6rem}
+.scribble--hero{top:1.4rem;left:1.6rem;color:var(--dark);text-shadow:none}
 .scribble--hero::after{content:"↘";display:inline-block;margin-left:.3em}
 .scribble--phone{position:static;color:var(--dark);display:inline-block;margin-top:1rem}
 
