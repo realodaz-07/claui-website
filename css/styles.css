@@ -73,7 +73,7 @@ h3{font-family:var(--display);font-weight:800}
 }
 /* all filled buttons share the header ("Work With Me") button effect */
 .btn--solid,.btn--pill,.btn--egg{background:var(--purple);color:var(--dark)}
-.btn--solid:hover,.btn--pill:hover,.btn--egg:hover{background:var(--dark);color:var(--white);transform:translateY(-3px)}
+.btn--solid:hover,.btn--pill:hover,.btn--egg:hover{background:var(--dark);color:var(--white);transform:translateY(-3px);box-shadow:0 10px 0 -2px var(--dark)}
 .btn--ghost{background:transparent;color:var(--dark);border-color:transparent;text-decoration:underline;text-underline-offset:5px}
 .btn--ghost:hover{color:var(--purple-deep)}
 
