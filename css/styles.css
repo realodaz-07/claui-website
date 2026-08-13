@@ -299,7 +299,10 @@ html.js .reveal.in{opacity:1;transform:none}
 .hslider{position:relative;overflow:hidden}
 .hslider__track{display:flex;align-items:stretch;transition:transform .7s cubic-bezier(.66,0,.2,1);will-change:transform}
 .hslider__slide{flex:0 0 100%;min-width:100%;display:flex;flex-direction:column;justify-content:center}
-.hslider .hero{width:100%;min-height:88vh}
+.hslider .hero{width:100%;min-height:82vh;align-items:center;padding-top:1vh}
+.hslider .hero__media{min-height:44vh;max-height:60vh;align-self:center}
+.hslider .hero__title{font-size:clamp(2.3rem,5.6vw,5rem)}
+.hslider .hero__lede{margin:1.2rem 0}
 .hslider .statement{width:100%;margin:auto;padding-top:5vh;padding-bottom:5vh}
 .hslider__nav{position:absolute;top:50%;transform:translateY(-50%);z-index:15;width:52px;height:52px;border-radius:999px;
   border:2px solid var(--dark);background:var(--white);color:var(--dark);font-family:var(--display);font-size:1.7rem;line-height:1;
