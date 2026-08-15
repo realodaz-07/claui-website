@@ -1,33 +1,186 @@
-name: Deploy to Cloudflare Pages
+name: Publish claui.okstudios.cloud
+
+# Push to main -> live on https://claui.okstudios.cloud/
+#
+# WHAT CHANGED, 2026-08-15. This workflow used to run `wrangler pages deploy`
+# against the Cloudflare Pages project `claui-website`. That afternoon
+# claui.okstudios.cloud was migrated OFF Pages onto the `okstudios-sites`
+# Worker + R2 bucket (repo `okstudios-hosting`). The old pipeline kept passing
+# green while changing nothing a visitor could see - a silent no-op deploy.
+# It now publishes into R2 by exactly the path `okstudios-hosting/worker/
+# publish.sh` uses, and then FETCHES THE LIVE SITE and compares every published
+# file byte for byte before the job is allowed to go green. A green tick here
+# means the live bytes changed, not merely that a command exited 0.
+#
+# CLOUDFLARE_API_TOKEN is REQUIRED. Missing, empty or rejected -> the job FAILS
+# and says so. It must never skip the publish and pass.
+#   gh secret set CLOUDFLARE_API_TOKEN -R realodaz-07/claui-website
+# Use the EXISTING `craft-agent (full)` Cloudflare token. Never mint a new one.
+# No R2 access key is stored anywhere: it is derived from that token below.
+
 on:
   push:
     branches: [main]
-  workflow_dispatch:
+  workflow_dispatch: {}
+
+concurrency:
+  # NOT cancel-in-progress: the publish is an rclone sync that deletes remote
+  # objects missing from dist/. Killing one halfway leaves the site torn.
+  group: r2-publish-claui
+  cancel-in-progress: false
+
+env:
+  SITE_HOST: claui.okstudios.cloud
+  R2_BUCKET: okstudios-sites
+  CF_ACCOUNT_ID: 1a27e68352eb5c992f9f46417dc6dc7a
+  GH_REPO: realodaz-07/claui-website
+
 jobs:
-  deploy:
+  publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
     steps:
-      - name: Require Cloudflare token
-        env:
-          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      - name: Require the Cloudflare token
         run: |
           if [ -z "$CF_TOKEN" ]; then
-            echo "::error title=Missing secret::CLOUDFLARE_API_TOKEN is not set on realodaz-07/claui-website. Deploy ABORTED - the live site was NOT updated. Fix with: gh secret set CLOUDFLARE_API_TOKEN -R realodaz-07/claui-website"
+            echo "::error title=Missing secret CLOUDFLARE_API_TOKEN::$GH_REPO has no CLOUDFLARE_API_TOKEN secret. Publish ABORTED - $SITE_HOST was NOT updated. Fix: gh secret set CLOUDFLARE_API_TOKEN -R $GH_REPO (use the existing 'craft-agent (full)' token; never mint a new one)."
             exit 1
           fi
-          echo "CLOUDFLARE_API_TOKEN is present - proceeding with deploy."
+          echo "CLOUDFLARE_API_TOKEN is present - proceeding."
 
       - uses: actions/checkout@v4
-      - name: Assemble dist (assets allowlist)
+
+      - name: Assemble deploy dir
         run: |
+          mkdir dist
+          # Assets allowlist. `js/main.js` is in it on purpose — it was missing
+          # once and the site shipped without its JavaScript. Do not drop it.
           mkdir -p dist/css dist/js dist/assets
           cp index.html dist/
           cp css/styles.css dist/css/
           cp js/main.js dist/js/
           cp assets/* dist/assets/
-      - name: Publish
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: 1a27e68352eb5c992f9f46417dc6dc7a
-          command: pages deploy dist --project-name=claui-website --branch=main
+          # `_headers` / `_redirects` are Cloudflare PAGES control files. Pages
+          # consumed them; this Worker would SERVE them as site content. Strip
+          # them, exactly as okstudios-hosting/worker/publish.sh does.
+          rm -f dist/_headers dist/_redirects
+          if [ ! -f dist/index.html ]; then
+            echo "::error title=Nothing to publish::dist/ has no index.html, so the assemble step is broken. Publish ABORTED - $SITE_HOST was NOT touched."
+            exit 1
+          fi
+          echo "assembled $(find dist -type f | wc -l) files"
+
+      - name: Derive the R2 S3 credential from the Cloudflare token
+        run: |
+          # R2's S3 endpoint needs a SigV4 key pair, but there is no second
+          # secret to store or rotate: Cloudflare DERIVES the pair from any API
+          # token carrying R2 permissions -
+          #   access key id     = the token's own id
+          #   secret access key = sha256(the token's value), lowercase hex
+          # Identical maths to okstudios-hosting/worker/lib/secrets.py.
+          v=$(curl -sS --max-time 30 -H "Authorization: Bearer $CF_TOKEN" \
+                https://api.cloudflare.com/client/v4/user/tokens/verify) || v=''
+          if [ "$(printf '%s' "$v" | jq -r '.success // false' 2>/dev/null)" != "true" ]; then
+            echo "::error title=Cloudflare rejected the token::CLOUDFLARE_API_TOKEN on $GH_REPO is invalid, expired or lacks permission. Publish ABORTED - $SITE_HOST was NOT updated. Cloudflare replied: $(printf '%s' "$v" | head -c 400)"
+            exit 1
+          fi
+          key=$(printf '%s' "$v" | jq -r '.result.id')
+          if [ -z "$key" ] || [ "$key" = "null" ]; then
+            echo "::error title=No token id::Cloudflare verified CLOUDFLARE_API_TOKEN on $GH_REPO but returned no token id, so the R2 access key cannot be derived. Publish ABORTED - $SITE_HOST was NOT updated."
+            exit 1
+          fi
+          sec=$(printf '%s' "$CF_TOKEN" | sha256sum | cut -d' ' -f1)
+          echo "::add-mask::$key"
+          echo "::add-mask::$sec"
+          {
+            echo "RCLONE_CONFIG_R2_TYPE=s3"
+            echo "RCLONE_CONFIG_R2_PROVIDER=Cloudflare"
+            echo "RCLONE_CONFIG_R2_ACCESS_KEY_ID=$key"
+            echo "RCLONE_CONFIG_R2_SECRET_ACCESS_KEY=$sec"
+            echo "RCLONE_CONFIG_R2_ENDPOINT=https://$CF_ACCOUNT_ID.r2.cloudflarestorage.com"
+            echo "RCLONE_CONFIG_R2_REGION=auto"
+            echo "RCLONE_CONFIG_R2_NO_CHECK_BUCKET=true"
+          } >> "$GITHUB_ENV"
+
+      - name: Install rclone
+        run: |
+          # rclone, not `wrangler r2 object put` (one object per process launch)
+          # and not Cloudflare's R2 REST API (~1,200 req / 5 min ACCOUNT-WIDE, a
+          # budget shared with gravstream's live HLS uploads).
+          if ! command -v rclone >/dev/null 2>&1; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq rclone \
+              || curl -fsSL https://rclone.org/install.sh | sudo bash
+          fi
+          rclone version | head -1
+
+      - name: Refuse a truncated publish
+        run: |
+          # `rclone sync` DELETES remote objects that are not in dist/. That is
+          # what you want for a site, and it is also how a broken assemble step
+          # would wipe one. Refuse anything that removes more than half of it.
+          have=$(rclone lsf -R --files-only "r2:$R2_BUCKET/$SITE_HOST" 2>/dev/null | wc -l | tr -d ' ')
+          want=$(find dist -type f | wc -l | tr -d ' ')
+          echo "live objects: $have    about to publish: $want"
+          if [ "$have" -gt 0 ] && [ "$want" -lt $(( have / 2 )) ]; then
+            echo "::error title=Refusing to gut the site::dist/ holds $want files but $SITE_HOST currently serves $have. That would delete more than half the site - almost certainly a broken assemble step, not an intentional edit. Publish ABORTED, nothing was written. If the deletion is genuine, publish by hand once with okstudios-hosting/worker/publish.sh."
+            exit 1
+          fi
+
+      - name: Publish to R2
+        run: |
+          rclone sync dist "r2:$R2_BUCKET/$SITE_HOST" \
+            --transfers=16 --checkers=16 --s3-no-check-bucket --stats-one-line -v
+
+      - name: Prove the LIVE site actually changed
+        run: |
+          # THE POINT OF THIS WHOLE FILE. Fetch every published file back over
+          # real HTTPS from the real hostname, with a per-run cache-busting query
+          # so no edge cache can answer, and compare sha256. A green tick without
+          # this step is exactly the silent no-op that made this rewrite necessary.
+          CB="ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          cat > /tmp/verify_one.sh <<'VEOF'
+          #!/bin/bash
+          f="$1"
+          # robots.txt is SYNTHESISED by the Worker for every non-indexed host and
+          # is never read from R2, so it can never match a stored object. It is
+          # asserted separately below.
+          if [ "$f" = "robots.txt" ]; then exit 0; fi
+          if got=$(curl -sS -f --retry 3 --retry-delay 2 --max-time 60 \
+                     "https://$SITE_HOST/$f?cb=$CB" | sha256sum | cut -d' ' -f1); then
+            want=$(sha256sum "dist/$f" | cut -d' ' -f1)
+            if [ "$got" != "$want" ]; then echo "BYTES-DIFFER  $f"; fi
+          else
+            echo "FETCH-FAILED  $f"
+          fi
+          exit 0
+          VEOF
+          chmod +x /tmp/verify_one.sh
+          export SITE_HOST CB
+          (cd dist && find . -type f | sed 's|^\./||') > /tmp/files.txt
+          bad=$(xargs -P 8 -d '\n' -I{} /tmp/verify_one.sh "{}" < /tmp/files.txt || true)
+          fail=0
+          if [ -n "$bad" ]; then
+            echo "$bad"
+            echo "::error title=Live site does not match what was published::$(echo "$bad" | wc -l | tr -d ' ') of $(wc -l < /tmp/files.txt | tr -d ' ') files on https://$SITE_HOST/ do not match the bytes this run uploaded. The publish did NOT take."
+            fail=1
+          else
+            echo "OK: all $(wc -l < /tmp/files.txt | tr -d ' ') published files match the live site byte for byte."
+          fi
+
+          # The site must still be invisible to search engines. It is a
+          # speculative mockup about a real, named business that never hired us.
+          hdr=$(curl -sSI --max-time 30 "https://$SITE_HOST/?cb=$CB" | tr -d '\r')
+          echo "$hdr" | head -1
+          if ! echo "$hdr" | grep -qi '^x-robots-tag: *noindex'; then
+            echo "::error title=noindex header is GONE::https://$SITE_HOST/ answered without 'X-Robots-Tag: noindex'. This site must not be indexable. If it was deliberately added to okstudios-hosting worker/src/indexed-hosts.js, that is a decision someone made on purpose and THIS CHECK must be removed from this workflow in the same commit."
+            fail=1
+          fi
+          rb=$(curl -sS --max-time 30 "https://$SITE_HOST/robots.txt?cb=$CB")
+          if [ "$rb" != "$(printf 'User-agent: *\nDisallow: /')" ]; then
+            echo "::error title=robots.txt is not blocking::https://$SITE_HOST/robots.txt returned: $rb"
+            fail=1
+          fi
+          exit $fail
