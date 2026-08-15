@@ -26,9 +26,8 @@ jobs:
           cp js/main.js dist/js/
           cp assets/* dist/assets/
       - name: Publish
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: 1a27e68352eb5c992f9f46417dc6dc7a
         uses: cloudflare/wrangler-action@v3
         with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: 1a27e68352eb5c992f9f46417dc6dc7a
           command: pages deploy dist --project-name=claui-website --branch=main
