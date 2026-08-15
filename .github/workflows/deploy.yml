@@ -7,6 +7,16 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Require Cloudflare token
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$CF_TOKEN" ]; then
+            echo "::error title=Missing secret::CLOUDFLARE_API_TOKEN is not set on realodaz-07/claui-website. Deploy ABORTED - the live site was NOT updated. Fix with: gh secret set CLOUDFLARE_API_TOKEN -R realodaz-07/claui-website"
+            exit 1
+          fi
+          echo "CLOUDFLARE_API_TOKEN is present - proceeding with deploy."
+
       - uses: actions/checkout@v4
       - name: Assemble dist (assets allowlist)
         run: |
@@ -16,15 +26,9 @@ jobs:
           cp js/main.js dist/js/
           cp assets/* dist/assets/
       - name: Publish
-        if: ${{ env.CLOUDFLARE_API_TOKEN != '' }}
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: 1a27e68352eb5c992f9f46417dc6dc7a
         uses: cloudflare/wrangler-action@v3
         with:
-          command: pages deploy dist --project-name=claui --branch=main
-      - name: Note when token missing
-        if: ${{ env.CLOUDFLARE_API_TOKEN == '' }}
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: echo "CLOUDFLARE_API_TOKEN not set — skipping deploy (dormant CI)."
+          command: pages deploy dist --project-name=claui-website --branch=main
